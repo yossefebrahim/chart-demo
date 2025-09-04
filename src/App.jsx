@@ -60,14 +60,83 @@ function App() {
     setLowColor('#CCDAF6');
   };
 
+  // Generate SVG for correlation matrix (cells only)
+  const generateSVG = () => {
+    const cellSize = 64; // 16 * 4 for better quality
+    const borderWidth = 1;
+    const fontSize = 12;
+    
+    // Calculate visible cells
+    const visibleCells = [];
+    let maxRow = 0, maxCol = 0;
+    
+    for (let row = 0; row < assets.length; row++) {
+      for (let col = 0; col <= row; col++) {
+        const value = matrix[row][col];
+        if (value !== null) {
+          visibleCells.push({ row, col, value });
+          maxRow = Math.max(maxRow, row);
+          maxCol = Math.max(maxCol, col);
+        }
+      }
+    }
+    
+    const svgWidth = (maxCol + 1) * cellSize;
+    const svgHeight = (maxRow + 1) * cellSize;
+    
+    let svgContent = `<svg width="${svgWidth}" height="${svgHeight}" xmlns="http://www.w3.org/2000/svg">`;
+    
+    // Add background
+    svgContent += `<rect width="${svgWidth}" height="${svgHeight}" fill="white"/>`;
+    
+    // Add cells
+    visibleCells.forEach(({ row, col, value }) => {
+      const x = col * cellSize;
+      const y = row * cellSize;
+      const color = colorFor(value, highColor, lowColor);
+      const formattedValue = formatCorrelation(value);
+      
+      // Cell rectangle
+      svgContent += `<rect x="${x}" y="${y}" width="${cellSize}" height="${cellSize}" fill="${color}" stroke="white" stroke-width="${borderWidth}"/>`;
+      
+      // Cell text
+      const textX = x + cellSize / 2;
+      const textY = y + cellSize / 2 + fontSize / 3;
+      svgContent += `<text x="${textX}" y="${textY}" text-anchor="middle" font-family="Arial, sans-serif" font-size="${fontSize}" font-weight="500" fill="white">${formattedValue}</text>`;
+    });
+    
+    svgContent += '</svg>';
+    return svgContent;
+  };
+
   // Export correlation matrix as image (cells only)
   const exportAsImage = async (format = 'png', quality = 2) => {
-    if (!matrixOnlyRef.current) return;
-    
     setIsExporting(true);
     setShowExportOptions(false);
     
     try {
+      if (format === 'svg') {
+        // Handle SVG export
+        const svgContent = generateSVG();
+        const blob = new Blob([svgContent], { type: 'image/svg+xml' });
+        const url = URL.createObjectURL(blob);
+        
+        const link = document.createElement('a');
+        const timestamp = new Date().toISOString().slice(0, 10);
+        link.download = `correlation-matrix-${period.toLowerCase().replace(/\s+/g, '-')}-${timestamp}.svg`;
+        link.href = url;
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        URL.revokeObjectURL(url);
+        setIsExporting(false);
+        return;
+      }
+
+      // Handle PNG/JPEG export
+      if (!matrixOnlyRef.current) return;
       // Hide any hover effects during export
       setHoveredCell(null);
       setHoveredRow(null);
@@ -226,6 +295,13 @@ function App() {
                           className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded"
                         >
                           JPEG (Smaller File)
+                        </button>
+                        <button
+                          onClick={() => exportAsImage('svg')}
+                          className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded flex items-center justify-between"
+                        >
+                          <span>SVG (Vector)</span>
+                          <span className="text-xs text-gray-500">Scalable</span>
                         </button>
                       </div>
                     </div>
