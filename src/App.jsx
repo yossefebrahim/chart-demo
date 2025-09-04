@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import html2canvas from 'html2canvas';
 import { colorFor, lerpColor } from './utils/colors';
 import correlationData from './data/corr.json';
 
@@ -10,8 +11,23 @@ function App() {
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [highColor, setHighColor] = useState('#0046D4');
   const [lowColor, setLowColor] = useState('#CCDAF6');
+  const [isExporting, setIsExporting] = useState(false);
+  const [showExportOptions, setShowExportOptions] = useState(false);
+  const matrixRef = useRef(null);
 
   const { period, assets, matrix } = correlationData;
+
+  // Close export options when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showExportOptions && !event.target.closest('.export-dropdown')) {
+        setShowExportOptions(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showExportOptions]);
 
   // Format correlation value (remove leading zero for positive values)
   const formatCorrelation = (value) => {
@@ -44,6 +60,56 @@ function App() {
     setLowColor('#CCDAF6');
   };
 
+  // Export correlation matrix as image
+  const exportAsImage = async (format = 'png', quality = 2) => {
+    if (!matrixRef.current) return;
+    
+    setIsExporting(true);
+    setShowExportOptions(false);
+    
+    try {
+      // Hide any hover effects during export
+      setHoveredCell(null);
+      setHoveredRow(null);
+      setHoveredCol(null);
+      
+      // Wait a bit for state to update
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      const canvas = await html2canvas(matrixRef.current, {
+        backgroundColor: '#ffffff',
+        scale: quality, // Quality multiplier
+        useCORS: true,
+        allowTaint: true,
+        logging: false,
+        width: matrixRef.current.scrollWidth,
+        height: matrixRef.current.scrollHeight,
+      });
+      
+      // Create download link
+      const link = document.createElement('a');
+      const timestamp = new Date().toISOString().slice(0, 10);
+      link.download = `correlation-matrix-${period.toLowerCase().replace(/\s+/g, '-')}-${timestamp}.${format}`;
+      
+      if (format === 'jpg' || format === 'jpeg') {
+        link.href = canvas.toDataURL('image/jpeg', 0.9);
+      } else {
+        link.href = canvas.toDataURL('image/png');
+      }
+      
+      // Trigger download
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+    } catch (error) {
+      console.error('Error exporting image:', error);
+      alert('Failed to export image. Please try again.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   // Create gradient for legend using current colors
   const createGradient = () => {
     const steps = 100;
@@ -71,12 +137,85 @@ function App() {
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
-        <div className="bg-white rounded-2xl shadow-sm p-6 mb-6">
+        <div className="bg-white rounded-2xl shadow-sm p-6 mb-6" ref={matrixRef}>
           <div className="flex justify-between items-start mb-6">
             <h1 className="text-2xl font-bold text-gray-900">Holding correlation</h1>
             
-            {/* Period Toggle */}
-            <div className="flex flex-col space-y-2">
+            {/* Export Button and Period Toggle */}
+            <div className="flex items-start space-x-4">
+              {/* Export Button */}
+              <div className="relative export-dropdown">
+                <div className="flex">
+                  <button
+                    onClick={() => exportAsImage()}
+                    disabled={isExporting}
+                    className="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-l-lg transition-colors text-sm font-medium"
+                    title="Export as PNG image"
+                  >
+                    {isExporting ? (
+                      <>
+                        <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        <span>Exporting...</span>
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <span>Export</span>
+                      </>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => setShowExportOptions(!showExportOptions)}
+                    disabled={isExporting}
+                    className="px-2 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-r-lg border-l border-blue-500 transition-colors"
+                    title="Export options"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                </div>
+
+                {/* Export Options Dropdown */}
+                {showExportOptions && (
+                  <div className="absolute right-0 top-12 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-48">
+                    <div className="p-3 border-b border-gray-100">
+                      <h4 className="text-sm font-medium text-gray-700 mb-2">Export Format</h4>
+                      <div className="space-y-2">
+                        <button
+                          onClick={() => exportAsImage('png', 2)}
+                          className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded flex items-center justify-between"
+                        >
+                          <span>PNG (High Quality)</span>
+                          <span className="text-xs text-gray-500">Recommended</span>
+                        </button>
+                        <button
+                          onClick={() => exportAsImage('png', 1)}
+                          className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded"
+                        >
+                          PNG (Standard Quality)
+                        </button>
+                        <button
+                          onClick={() => exportAsImage('jpg', 2)}
+                          className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded"
+                        >
+                          JPEG (Smaller File)
+                        </button>
+                      </div>
+                    </div>
+                    <div className="p-3 text-xs text-gray-500">
+                      Files are saved as: correlation-matrix-{period.toLowerCase()}-YYYY-MM-DD.format
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Period Toggle */}
+              <div className="flex flex-col space-y-2">
               <label className="flex items-center space-x-2 text-sm">
                 <input
                   type="radio"
@@ -101,6 +240,7 @@ function App() {
                 />
                 <span className="text-gray-400">Pick overall period</span>
               </label>
+              </div>
             </div>
           </div>
 
