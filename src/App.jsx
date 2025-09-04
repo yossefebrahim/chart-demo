@@ -60,7 +60,7 @@ function App() {
     setLowColor('#CCDAF6');
   };
 
-  // Export correlation matrix as image (matrix only)
+  // Export correlation matrix as image (cells only)
   const exportAsImage = async (format = 'png', quality = 2) => {
     if (!matrixOnlyRef.current) return;
     
@@ -76,6 +76,20 @@ function App() {
       // Wait a bit for state to update
       await new Promise(resolve => setTimeout(resolve, 100));
       
+      // Temporarily hide headers and labels for export
+      const columnHeaders = matrixOnlyRef.current.querySelector('.column-headers');
+      const rowLabels = matrixOnlyRef.current.querySelectorAll('.row-label');
+      
+      if (columnHeaders) columnHeaders.style.display = 'none';
+      rowLabels.forEach(label => label.style.display = 'none');
+      
+      // Adjust matrix rows to remove left padding for row labels
+      const matrixRows = matrixOnlyRef.current.querySelectorAll('.matrix-row');
+      matrixRows.forEach(row => {
+        row.style.paddingLeft = '0';
+        row.style.justifyContent = 'flex-start';
+      });
+      
       const canvas = await html2canvas(matrixOnlyRef.current, {
         backgroundColor: '#ffffff',
         scale: quality, // Quality multiplier
@@ -84,6 +98,14 @@ function App() {
         logging: false,
         width: matrixOnlyRef.current.scrollWidth,
         height: matrixOnlyRef.current.scrollHeight,
+      });
+      
+      // Restore headers and labels after export
+      if (columnHeaders) columnHeaders.style.display = '';
+      rowLabels.forEach(label => label.style.display = '');
+      matrixRows.forEach(row => {
+        row.style.paddingLeft = '';
+        row.style.justifyContent = '';
       });
       
       // Create download link
@@ -316,7 +338,7 @@ function App() {
           <div className="overflow-x-auto">
             <div className="inline-block min-w-full" ref={matrixOnlyRef}>
               {/* Column Headers */}
-              <div className="flex mb-2">
+              <div className="flex mb-2 column-headers">
                 <div className="w-64 flex-shrink-0"></div> {/* Space for row labels */}
                 {assets.map((_, colIndex) => (
                   <div
@@ -332,9 +354,9 @@ function App() {
 
               {/* Matrix Rows */}
               {assets.map((asset, rowIndex) => (
-                <div key={rowIndex} className="flex border-b border-gray-100">
+                <div key={rowIndex} className="flex border-b border-gray-100 matrix-row">
                   {/* Row Label */}
-                  <div className={`w-64 flex-shrink-0 flex items-center px-4 py-3 text-sm ${
+                  <div className={`w-64 flex-shrink-0 flex items-center px-4 py-3 text-sm row-label ${
                     hoveredRow === rowIndex ? 'bg-blue-50' : ''
                   }`}>
                     <div className="flex items-center space-x-3">
