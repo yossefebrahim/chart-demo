@@ -7,7 +7,7 @@ export default {
   theme: {
     extend: {
       colors: {
-        'correlation-high': '#0046D4',
+        'correlation-high': '#2B65DB',
         'correlation-low': '#CCDAF6',
       }
     },

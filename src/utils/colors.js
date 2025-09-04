@@ -53,11 +53,11 @@ export function lerpColor(hex1, hex2, t) {
  * Get color for correlation value
  * Maps correlation values from [-1, 1] to color gradient from high to low colors
  * @param {number} value - Correlation value (-1 to 1)
- * @param {string} highColor - Color for high correlation (default: #0046D4)
+ * @param {string} highColor - Color for high correlation (default: #2B65DB)
  * @param {string} lowColor - Color for low correlation (default: #CCDAF6)
  * @returns {string} Hex color string
  */
-export function colorFor(value, highColor = '#0046D4', lowColor = '#CCDAF6') {
+export function colorFor(value, highColor = '#2B65DB', lowColor = '#CCDAF6') {
   // Map [-1, 1] to [0, 1] range
   const t = Math.max(0, Math.min(1, (value + 1) / 2));
   
