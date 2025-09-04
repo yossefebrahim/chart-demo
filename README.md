@@ -88,7 +88,7 @@ The correlation data should follow this structure in `src/data/corr.json`:
 ## Color Mapping
 
 The heatmap uses a custom color interpolation:
-- **High correlation** (close to 1): Dark blue `#2B65DB`
+- **High correlation** (close to 1): Dark blue `#003AB1`
 - **Low correlation** (close to -1): Light blue `#CCDAF6`
 - Values are mapped from [-1, 1] to [0, 1] using `(value + 1) / 2`
 
@@ -101,7 +101,7 @@ Edit the color values in `src/utils/colors.js`:
 ```javascript
 export function colorFor(value) {
   const t = Math.max(0, Math.min(1, (value + 1) / 2));
-  return lerpColor('#2B65DB', '#CCDAF6', 1 - t);
+  return lerpColor('#003AB1', '#CCDAF6', 1 - t);
 }
 ```
 

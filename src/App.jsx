@@ -9,7 +9,7 @@ function App() {
   const [hoveredCol, setHoveredCol] = useState(null);
   const [specificPeriod, setSpecificPeriod] = useState(true);
   const [showColorPicker, setShowColorPicker] = useState(false);
-  const [highColor, setHighColor] = useState('#2B65DB');
+  const [highColor, setHighColor] = useState('#003AB1');
   const [lowColor, setLowColor] = useState('#CCDAF6');
   const [isExporting, setIsExporting] = useState(false);
   const [showExportOptions, setShowExportOptions] = useState(false);
@@ -56,7 +56,7 @@ function App() {
 
   // Reset colors to default
   const resetColors = () => {
-    setHighColor('#2B65DB');
+    setHighColor('#003AB1');
     setLowColor('#CCDAF6');
   };
 
