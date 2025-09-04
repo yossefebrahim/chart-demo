@@ -13,7 +13,7 @@ function App() {
   const [lowColor, setLowColor] = useState('#CCDAF6');
   const [isExporting, setIsExporting] = useState(false);
   const [showExportOptions, setShowExportOptions] = useState(false);
-  const matrixRef = useRef(null);
+  const matrixOnlyRef = useRef(null);
 
   const { period, assets, matrix } = correlationData;
 
@@ -60,9 +60,9 @@ function App() {
     setLowColor('#CCDAF6');
   };
 
-  // Export correlation matrix as image
+  // Export correlation matrix as image (matrix only)
   const exportAsImage = async (format = 'png', quality = 2) => {
-    if (!matrixRef.current) return;
+    if (!matrixOnlyRef.current) return;
     
     setIsExporting(true);
     setShowExportOptions(false);
@@ -76,14 +76,14 @@ function App() {
       // Wait a bit for state to update
       await new Promise(resolve => setTimeout(resolve, 100));
       
-      const canvas = await html2canvas(matrixRef.current, {
+      const canvas = await html2canvas(matrixOnlyRef.current, {
         backgroundColor: '#ffffff',
         scale: quality, // Quality multiplier
         useCORS: true,
         allowTaint: true,
         logging: false,
-        width: matrixRef.current.scrollWidth,
-        height: matrixRef.current.scrollHeight,
+        width: matrixOnlyRef.current.scrollWidth,
+        height: matrixOnlyRef.current.scrollHeight,
       });
       
       // Create download link
@@ -137,7 +137,7 @@ function App() {
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
-        <div className="bg-white rounded-2xl shadow-sm p-6 mb-6" ref={matrixRef}>
+        <div className="bg-white rounded-2xl shadow-sm p-6 mb-6">
           <div className="flex justify-between items-start mb-6">
             <h1 className="text-2xl font-bold text-gray-900">Holding correlation</h1>
             
@@ -314,7 +314,7 @@ function App() {
 
           {/* Correlation Matrix */}
           <div className="overflow-x-auto">
-            <div className="inline-block min-w-full">
+            <div className="inline-block min-w-full" ref={matrixOnlyRef}>
               {/* Column Headers */}
               <div className="flex mb-2">
                 <div className="w-64 flex-shrink-0"></div> {/* Space for row labels */}
